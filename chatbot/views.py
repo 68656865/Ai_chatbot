@@ -256,3 +256,24 @@ class ChatByDateView(APIView):
             return Response({"error": "Database error", "details": str(db_err)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
             return Response({"error": "Unexpected error", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class AllUsersChatHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            chats = ChatHistory.objects.select_related('user').all().order_by('-timestamp')
+            if not chats.exists():
+                return Response(
+                    {"message": "No chat history found."},
+                    status=status.HTTP_204_NO_CONTENT
+                )
+            serializer = ChatSerializer(chats, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"error": f"Something went wrong: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+            

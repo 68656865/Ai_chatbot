@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import chat_page , login_page,register_page, RegisterView, LoginView, LogoutView, ChatBotView,  DailyLatestBotResponseView, ChatByDateView
+from .views import chat_page , login_page,register_page, RegisterView, LoginView, LogoutView, ChatBotView,  DailyLatestBotResponseView, ChatByDateView, AllUsersChatHistoryView
 
 urlpatterns = [
     path('', login_page, name='login-page'),
@@ -13,4 +13,6 @@ urlpatterns = [
     # path('chat/history/', ChatHistoryView.as_view(), name='chat-history'),
     path('chat/daily-latest/', DailyLatestBotResponseView.as_view(), name='chat-daily-latest'),
     path('api/chat-by-date/', ChatByDateView.as_view(), name='chat-by-date'),
+    path('chat-history/', AllUsersChatHistoryView.as_view(), name='chat-history'),
 ]
+
