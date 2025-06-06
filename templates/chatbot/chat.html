@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body {
+            background-color: #ffffff;
+            background-image: linear-gradient(90deg, #74EBD5 0%, #9FACE6 100%);
+
+            min-height: 100vh;
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            width: 5px;
+            background: #f5f5f5;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            width: 1em;
+            background-color: #ddd;
+            outline: 1px solid slategrey;
+            border-radius: 1rem;
+        }
+
+        .text-small {
+            font-size: 0.9rem;
+        }
+
+        .messages-box,
+        .chat-box {
+            height: 85vh;
+            overflow-y: scroll;
+        }
+
+        .rounded-lg {
+            border-radius: 0.5rem;
+        }
+
+        input::placeholder {
+            font-size: 0.9rem;
+            color: #999;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+
+<body>
+    <div class=" py-3 px-5">
+
+
+
+        <div class="row rounded-lg overflow-hidden shadow">
+            <!-- Users box-->
+            <div class="col-5 px-0">
+                <div class="bg-white">
+
+                    <div class="bg-gray px-4 py-2 bg-light">
+                        <p class="h5 mb-0 py-1">Recent</p>
+                    </div>
+
+                    <div class="messages-box">
+                        <div class="list-group rounded-0" id="chat-history-list">
+
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Chat Box-->
+            <div class="col-7 px-0">
+                <div class="px-4 py-5 chat-box bg-white">
+                    <div class="border p-3 rounded" style="height: 500px; overflow-y: auto;" id="chat-box">
+                        <!-- Messages will be inserted here -->
+                    </div>
+
+                </div>
+
+                <form id="chat-form" class="bg-light">
+                    <div class="input-group">
+                        <input type="text" id="chat-input" placeholder="Type a message" aria-describedby="button-addon2"
+                            class="form-control rounded-0 border-0 py-4 bg-light">
+                        <div class="input-group-append">
+                            <button id="button-addon2" type="submit" class="btn btn-link">
+                                <i class="fa fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+
+            </div>
+        </div>
+    </div>
+    <script>
+        if (!localStorage.getItem("access_token")) {
+            window.location.href = "/";
+        }
+
+        const chatBox = document.getElementById("chat-box");
+        const chatInput = document.getElementById("chat-input");
+
+        function formatTimestamp(ts = null) {
+            const now = ts ? new Date(ts) : new Date();
+            const hours = now.getHours() % 12 || 12;
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+            const date = now.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            return `${hours}:${minutes} ${ampm} | ${date}`;
+        }
+
+        function appendUserMessage(message, timestamp = null) {
+            const html = `
+        <div class="media w-50 ml-auto mb-3">
+          <div class="media-body">
+            <div class="bg-primary rounded py-2 px-3 mb-2">
+              <p class="text-small mb-0 text-white">${message}</p>
+            </div>
+            <p class="small text-muted">${formatTimestamp(timestamp)}</p>
+          </div>
+        </div>
+      `;
+            chatBox.insertAdjacentHTML("beforeend", html);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function appendBotMessage(message, timestamp = null) {
+            const html = `
+        <div class="media w-50 mb-3">
+          <img src="https://res.cloudinary.com/mhmd/image/upload/v1564960395/avatar_usae7z.svg"
+              alt="user" width="50" class="rounded-circle">
+          <div class="media-body ml-3">
+            <div class="bg-light rounded py-2 px-3 mb-2">
+              <p class="text-small mb-0 text-muted">${message}</p>
+            </div>
+            <p class="small text-muted">${formatTimestamp(timestamp)}</p>
+          </div>
+        </div>
+      `;
+            chatBox.insertAdjacentHTML("beforeend", html);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function loadChatHistory() {
+            try {
+                const accessToken = localStorage.getItem("access_token");
+                if (!accessToken) return;
+
+                const response = await fetch("http://localhost:8000/chat/daily-latest/", {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + accessToken
+                    }
+                });
+
+                const data = await response.json();
+                const container = document.getElementById("chat-history-list");
+                container.innerHTML = '';
+
+                if (!data.length) {
+                    container.innerHTML = '<p class="text-muted text-center">No chat history found.</p>';
+                    return;
+                }
+
+                const formatDate = (isoString) => {
+                    const date = new Date(isoString);
+                    return date.toISOString().split("T")[0]; // YYYY-MM-DD
+                };
+
+                data.forEach((item, index) => {
+                    const formattedDate = formatDate(item.timestamp);
+                    const preview = item.bot_response.length > 90
+                        ? item.bot_response.substring(0, 90) + "..."
+                        : item.bot_response;
+
+                    const chatItem = document.createElement("a");
+                    chatItem.href = "#";
+                    chatItem.className = `list-group-item list-group-item-action ${index === 0 ? 'active text-white' : 'list-group-item-light'} rounded-0`;
+                    chatItem.innerHTML = `
+            <div class="media">
+              <img src="https://res.cloudinary.com/mhmd/image/upload/v1564960395/avatar_usae7z.svg"
+                  alt="user" width="50" class="rounded-circle">
+              <div class="media-body ml-4">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                  <h6 class="mb-0">Jason Doe</h6>
+                  <small class="small font-weight-bold">${formattedDate}</small>
+                </div>
+                <p class="font-italic ${index === 0 ? '' : 'text-muted'} mb-0 text-small">${preview}</p>
+              </div>
+            </div>
+          `;
+
+                    chatItem.addEventListener("click", () => loadChatsByDate(formattedDate));
+                    container.appendChild(chatItem);
+
+                    // Load first date's full chat by default
+                    if (index === 0) {
+                        loadChatsByDate(formattedDate);
+                    }
+                });
+            } catch (error) {
+                console.error("Error loading chat history:", error);
+            }
+        }
+
+        async function loadChatsByDate(dateString) {
+            try {
+                const accessToken = localStorage.getItem("access_token");
+                if (!accessToken) return;
+
+                const response = await fetch(`http://localhost:8000/api/chat-by-date/?date=${dateString}`, {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + accessToken
+                    }
+                });
+
+                const data = await response.json();
+                chatBox.innerHTML = ''; // Clear chat window
+
+                if (!data.length) {
+                    appendBotMessage("No messages found for this date.");
+                    return;
+                }
+
+                data.forEach(item => {
+                    appendUserMessage(item.user_message, item.timestamp);
+                    appendBotMessage(item.bot_response, item.timestamp);
+                });
+            } catch (err) {
+                console.error("Error loading chat by date:", err);
+                appendBotMessage("Failed to load messages.");
+            }
+        }
+
+        document.getElementById("chat-form").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            const accessToken = localStorage.getItem("access_token");
+            if (!accessToken) {
+                alert("You're not logged in!");
+                window.location.href = "/login.html";
+                return;
+            }
+
+            appendUserMessage(message);
+            chatInput.value = "";
+
+            try {
+                const response = await fetch("http://localhost:8000/chat/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + accessToken
+                    },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await response.json();
+                if (response.ok && data.bot_response) {
+                    appendBotMessage(data.bot_response);
+                } else {
+                    appendBotMessage("Sorry, something went wrong.");
+                }
+            } catch (err) {
+                console.error("Error:", err);
+                appendBotMessage("Network error or server not responding.");
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", loadChatHistory);
+    </script>
+
+</body>
+
+</html>

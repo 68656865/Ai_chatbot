@@ -1,0 +1,129 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Register</title>
+  <link rel="stylesheet" href="{% static 'chatbot/css/style.css' %}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.3.1/css/swiper.css" />
+</head>
+
+<body>
+  <div class="login-container">
+    <div class="login-form">
+      <div class="login-form-inner">
+        <div class="logo">
+          <!-- Your SVG Logo -->
+        </div>
+        <h1>Register</h1>
+        <p class="body-text">See your growth and get consulting support!</p>
+
+        <div class="sign-in-seperator"><span>or Sign up with Email</span></div>
+
+        <!-- ✅ No action or method needed -->
+        <form id="registerForm">
+          {% csrf_token %}
+          <div class="login-form-group">
+            <label for="username">Username <span class="required-star">*</span></label>
+            <input type="text" id="username" name="username" placeholder="username" required />
+          </div>
+
+          <div class="login-form-group">
+            <label for="email">Email <span class="required-star">*</span></label>
+            <input type="email" id="email" name="email" placeholder="email@example.com" required />
+          </div>
+
+          <div class="login-form-group">
+            <label for="password">Password <span class="required-star">*</span></label>
+            <input type="password" id="password" name="password" placeholder="Minimum 8 characters" required />
+          </div>
+
+          <button type="submit" class="rounded-button login-cta">Register</button>
+        </form>
+
+
+        <div class="register-div">
+          Already have an account? <a href="/" class="link create-account">Login?</a>
+        </div>
+      </div>
+    </div>
+    <div class="onboarding">
+      <div class="swiper-container">
+        <div class="swiper-wrapper">
+          <div class="swiper-slide color-1">
+            <div class="slide-image">
+              <img src="https://ismailvtl-images-project.vercel.app/startup-launch.png" loading="lazy" alt="" />
+            </div>
+            <div class="slide-content">
+              <h2>Turn your ideas into reality.</h2>
+              <p>Consistent quality and eperience across all platform and devices</p>
+            </div>
+          </div>
+          <div class="swiper-slide color-1">
+            <div class="slide-image">
+              <img src="https://ismailvtl-images-project.vercel.app/cloud-storage.png" loading="lazy" alt="" />
+            </div>
+            <div class="slide-content">
+              <h2>Turn your ideas into reality.</h2>
+              <p>Consistent quality and eperience across all platform and devices</p>
+            </div>
+          </div>
+
+          <div class="swiper-slide color-1">
+            <div class="slide-image">
+              <img src="https://ismailvtl-images-project.vercel.app/cloud-storage.png" loading="lazy" alt="" />
+            </div>
+            <div class="slide-content">
+              <h2>Turn your ideas into reality.</h2>
+              <p>Consistent quality and eperience across all platform and devices</p>
+            </div>
+          </div>
+        </div>
+        <!-- Add Pagination -->
+        <div class="swiper-pagination"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ JS to handle login -->
+  <script>
+    document.getElementById('registerForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const username = document.getElementById('username').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const response = await fetch("http://localhost:8000/register/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            // CSRF token header is NOT required for API POST with JSON usually
+          },
+          body: JSON.stringify({ username, email, password }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          localStorage.setItem("access_token", data.access);
+          localStorage.setItem("refresh_token", data.refresh);
+          window.location.href = "/chat-page/";
+        } else {
+          alert(data.error || "Registration failed");
+        }
+      } catch (err) {
+        console.error("Registration error:", err);
+        alert("Registration failed. Try again.");
+      }
+    });
+  </script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/3.3.0/js/swiper.min.js"></script>
+  <script src="{% static 'chatbot/js/script.js' %}"></script>
+</body>
+
+</html>
